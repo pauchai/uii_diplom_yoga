@@ -1,3 +1,7 @@
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np 
+
 class Visualizer():
   def __init__(self, skeleton_graph):
     self.skeleton_graph = skeleton_graph
@@ -55,6 +59,8 @@ class Visualizer():
 
   def draw_heatmap_on_image(self, img, heatmap, background_weight = 0.3, heatmap_weight = 0.8):
     if (img.shape[-2] != heatmap.shape[-2] ):
+      #print("Image shape:", img.shape)
+      #print("Heatmap shape:", heatmap.shape)
       heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
     #heatmap = heatmap * 255
 

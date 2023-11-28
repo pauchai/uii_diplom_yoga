@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import random
@@ -31,6 +32,7 @@ class DataSequence(Sequence):
       self.anno = json.load(fp)
 
     if shuffle:
+      #print("is shuffled")
       random.shuffle(self.anno)
 
   def __len__(self):
@@ -137,7 +139,7 @@ class DataSequence(Sequence):
 
     #augment
     if (self.augment):
-      print("make augment")
+      #print("make augment")
       image, landmark = augment_img(image, landmark)
 
 
