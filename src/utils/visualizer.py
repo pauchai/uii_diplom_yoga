@@ -33,7 +33,7 @@ class Visualizer():
       x, y, v = zip(*landmarks)
       colors = ["r" if int(val) == 1 else  "b" for val in v] # 'r' for visible 1 'b' for 0
       axs[i].scatter(x, y, c= colors, marker='o')  # , 'o' for circular marker
-      im = axs[i].imshow(image)
+      im = axs[i].imshow(image, vmin  = -2, vmax = 2)
       cbar = fig.colorbar(im, ax=axs[i], shrink = 1.0)
 
     plt.show()
@@ -53,7 +53,13 @@ class Visualizer():
     for i, (image, heatmap) in enumerate(zip(image_batch, heatmap_batch)):
         bimg = image.copy()
 
-        axs[i].imshow(self.draw_heatmap_on_image(bimg, heatmap.copy(), background_weight = background_weight, heatmap_weight = heatmap_weight))
+        axs[i].imshow(
+          self.draw_heatmap_on_image(bimg, heatmap.copy(), background_weight = background_weight, heatmap_weight = heatmap_weight),
+          vmin = -2,
+          vmax = 2
+
+          
+        )
 
     plt.show()
 
