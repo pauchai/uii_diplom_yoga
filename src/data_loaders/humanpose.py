@@ -15,7 +15,7 @@ from .augmentation import augment_img
 from .augmentation_utils import random_occlusion
 
 class DataSequence(Sequence):
-  def __init__(self, images_folder, label_file,   batch_size = 8, input_size = (128, 128), heatmap_size = (64, 64), heatmap_sigma = 4, shuffle=True, augment=False, random_flip=False, clip_landmark = False, symmetry_point_ids = None ):
+  def __init__(self, images_folder, label_file,   batch_size = 8, input_size = (128, 128), heatmap_size = (64, 64), heatmap_sigma = 4, shuffle=True, augment=False, random_flip=False, clip_landmark = False, symmetry_point_ids = None, output_heatmap = True):
     self.image_folder = images_folder
     self.label_file = label_file
     self.batch_size = batch_size
@@ -27,6 +27,7 @@ class DataSequence(Sequence):
     self.augment = augment
     self.random_flip = random_flip
     self.clip_landmark = clip_landmark
+    self.output_heatmap = output_heatmap
 
     with open(self.label_file, "r") as fp:
       self.anno = json.load(fp)
@@ -60,8 +61,10 @@ class DataSequence(Sequence):
       batch_landmark[batch_landmark < 0] = 0
       batch_landmark[batch_landmark > 1] = 1
 
-    return batch_image, (batch_landmark, batch_heatmap)
-    #return batch_image, batch_heatmap
+    if self.output_heatmap:
+      return batch_image, (batch_landmark, batch_heatmap)
+    else:
+      return batch_image, batch_landmark
 
   def load_data(self, image_folder, data):
     path = os.path.join(image_folder, data['image'])
