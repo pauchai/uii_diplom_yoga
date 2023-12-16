@@ -15,7 +15,11 @@ from .augmentation import augment_img
 from .augmentation_utils import random_occlusion
 
 class DataSequence(Sequence):
-  def __init__(self, images_folder, label_file,   batch_size = 8, input_size = (128, 128), heatmap_size = (64, 64), heatmap_sigma = 4, shuffle=True, augment=False, random_flip=False, clip_landmark = False, symmetry_point_ids = None, output_heatmap = True):
+  def __init__(self, images_folder, label_file,   batch_size = 8, input_size = (128, 128),
+    heatmap_size = (64, 64), heatmap_sigma = 4, shuffle=True, augment=False,
+    random_flip=False, clip_landmark = False, symmetry_point_ids = None, output_heatmap = True, 
+    input_to_grayscale = False
+    ):
     self.image_folder = images_folder
     self.label_file = label_file
     self.batch_size = batch_size
@@ -28,6 +32,7 @@ class DataSequence(Sequence):
     self.random_flip = random_flip
     self.clip_landmark = clip_landmark
     self.output_heatmap = output_heatmap
+    self.input_to_grayscale = input_to_grayscale
 
     with open(self.label_file, "r") as fp:
       self.anno = json.load(fp)
@@ -164,9 +169,18 @@ class DataSequence(Sequence):
     return image, landmark, gtmap
 
   def preprocess_images(self, images):
-    for i in range(images.shape[0]):
-        images[i] = cv2.cvtColor(images[i], cv2.COLOR_BGR2RGB)
-    mean = np.array([0.5, 0.5, 0.5], dtype=np.float64)
+    
+    if self.input_to_grayscale:
+      images_gs = np.empty((images.shape[0], images.shape[1], images.shape[2], 1), dtype=np.uint8)
+      for i in range(images.shape[0]):
+          #print(images[i].shape)
+          images_gs[i, :, :, 0] = cv2.cvtColor(images[i], cv2.COLOR_BGR2GRAY)  
+      mean = np.array([0.5], dtype=np.float64)
+      images = images_gs
+    else:
+      for i in range(images.shape[0]):
+          images[i] = cv2.cvtColor(images[i], cv2.COLOR_BGR2RGB)
+      mean = np.array([0.5, 0.5, 0.5], dtype=np.float64)
     images = images / 255.0
     images -= mean
     return images
