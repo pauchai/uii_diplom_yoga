@@ -26,7 +26,7 @@ def load_aug():
                 pad_cval=(0, 255)
             )),
             sometimes(iaa.Affine(
-                scale={"x": (0.9, 1.1), "y": (0.9, 1.1)},
+                scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
                 translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
                 rotate=(-5, 5),
                 shear=(-5, 5),
