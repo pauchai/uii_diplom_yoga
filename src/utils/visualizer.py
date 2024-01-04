@@ -3,10 +3,14 @@ import cv2
 import numpy as np 
 
 class Visualizer():
-  def __init__(self, skeleton_graph):
+  def __init__(self, skeleton_graph, limit = 5):
     self.skeleton_graph = skeleton_graph
+    self.fig_size = (35,5)
+    self.limit = limit
   def image_batch_show(self,image_batch):
-    fig, axs = plt.subplots(1, len(image_batch), figsize = (35, 5))
+    limit = min(len(image_batch), self.limit)
+    image_batch = np.clip(image_batch[:limit],0,1)
+    fig, axs = plt.subplots(1, len(image_batch), figsize = self.fig_size)
     for i, image in enumerate(image_batch):
       axs[i].imshow(image)
     plt.show()
@@ -21,7 +25,7 @@ class Visualizer():
       if data_batch.shape[0] != image_batch.shape[0]:
         print_error("Batches count data and images is not equal")
         return False
-        
+
       if not np.any(np.asarray(data_batch)):
         print_error("Data is empty.")
         return False
@@ -35,17 +39,22 @@ class Visualizer():
 
   def landmark_batch_image_joints_show(self, image_batch, landmark_batch):
     try:
+      limit = min(len(image_batch), self.limit)
+
       num_landmarks = len(landmark_batch[0])
+      image_batch = np.clip(image_batch[:limit], 0, 1)
+      landmark_batch = landmark_batch[:limit]
 
       if not self.check_data_batches(landmark_batch, image_batch):
               return
 
-      fig, axs = plt.subplots(1, len(image_batch), figsize = (35,5))
+      fig, axs = plt.subplots(1, len(image_batch), figsize = self.fig_size)
        # Check if axs is not iterable and convert it to a list
       if not isinstance(axs, (list, np.ndarray)):
           axs = np.array([axs])
 
       for i, (image, landmarks) in enumerate(zip(image_batch, landmark_batch)):
+        image = np.clip(image, 0, 1)
         if len(landmarks) != num_landmarks:
                   print("Length mismatch: Landmarks and num_landmarks must have the same length.")
                   continue
@@ -66,11 +75,11 @@ class Visualizer():
         colors = ["r" if int(val) == 1 else  "b" for val in v] # 'r' for visible 1 'b' for 0
         axs[i].scatter(x, y, c= colors, marker='o')  # , 'o' for circular marker
         im = axs[i].imshow(image, vmin  = -2, vmax = 2)
-        cbar = fig.colorbar(im, ax=axs[i], shrink = 1.0)
+        #cbar = fig.colorbar(im, ax=axs[i], shrink = 1.0)
 
       plt.show()
     except Exception as e:
-      print(f"An error occurred: {e}") 
+      print(f"An error occurred: {e}")
       print(f"Shape of image_batch: {np.shape(image_batch)}")
       print(f"Shape of heatmap_batch: {np.shape(landmark_batch)}")
 
@@ -82,24 +91,28 @@ class Visualizer():
       # Check if axs is not iterable and convert it to a list
       if not isinstance(axs, (list, np.ndarray)):
           axs = np.array([axs])
-          
+
       heatmaps = None
       for i, heatmap in enumerate(heatmap_batch):
         heatmaps = np.transpose(heatmap, (2,0,1))
         axs[i].imshow(np.vstack(heatmaps))
       plt.show()
     except Exception as e:
-      print(f"An error occurred: {e}") 
+      print(f"An error occurred: {e}")
       print(f"Shape of heatmap_batch: {np.shape(heatmap_batch)}")
 
 
-  def heatmap_batch_onimage_show(self,image_batch, heatmap_batch,  background_weight = 0.3, heatmap_weight = 0.8):
+  def heatmap_batch_onimage_show(self,image_batch, heatmap_batch,  background_weight = 0.3, heatmap_weight = 0.8, show_cbar = False):
     #if not self.check_data_batches(heatmap_batch, image_batch):
     #  return
+    limit = min(len(image_batch), self.limit)
+
+    image_batch = np.clip(image_batch[:limit], 0, 1)
+    heatmap_batch = np.clip(heatmap_batch[:limit], 0, 1)
 
     try:
-      fig, axs = plt.subplots(1, len(heatmap_batch), figsize = (25, 35))
-      
+      fig, axs = plt.subplots(1, len(heatmap_batch), figsize = self.fig_size)
+
       # Check if axs is not iterable and convert it to a list
       if not isinstance(axs, (list, np.ndarray)):
           axs = np.array([axs])
@@ -107,18 +120,17 @@ class Visualizer():
       heatmaps = None
       for i, (image, heatmap) in enumerate(zip(image_batch, heatmap_batch)):
           bimg = image.copy()
-
-          axs[i].imshow(
-            self.draw_heatmap_on_image(bimg, heatmap.copy(), background_weight = background_weight, heatmap_weight = heatmap_weight),
-            vmin = -2,
-            vmax = 2
-
-            
+          composed_image = self.draw_heatmap_on_image(bimg, heatmap.copy(), background_weight = background_weight, heatmap_weight = heatmap_weight)
+          im = axs[i].imshow(
+            composed_image,
           )
+          if (show_cbar):
+            cbar = fig.colorbar(im, ax=axs[i], shrink = 1.0)
+
 
       plt.show()
     except Exception as e:
-      print(f"An error occurred: {e}") 
+      print(f"An error occurred: {e}")
       print(f"Shape of image_batch: {np.shape(image_batch)}")
       print(f"Shape of heatmap_batch: {np.shape(heatmap_batch)}")
 
@@ -127,7 +139,6 @@ class Visualizer():
       #print("Image shape:", img.shape)
       #print("Heatmap shape:", heatmap.shape)
       heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
-    #heatmap = heatmap * 255
 
 
      # Sum across channels
@@ -138,6 +149,7 @@ class Visualizer():
     normalized_heatmap = (summed_heatmap - np.min(summed_heatmap)) / (np.max(summed_heatmap) - np.min(summed_heatmap))
 
     # Overlay the heatmap on the image
-    overlaid_image = ((img + 0.5) * background_weight + normalized_heatmap * heatmap_weight )   # Adjust this blending based on your preference
-
+    overlaid_image = (img  * background_weight + normalized_heatmap * heatmap_weight )   # Adjust this blending based on your preference
+    overlaid_image = np.clip(overlaid_image, 0, 1)
+    #print(overlaid_image.min(), overlaid_image.max())
     return overlaid_image
